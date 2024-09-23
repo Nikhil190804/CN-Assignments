@@ -5,7 +5,6 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -41,121 +40,10 @@ int is_pid_dir(char *name)
     }
     return 1;
 }
-/*
-void get_process_info()
+
+char *get_process_info()
 {
-    // allocate memory to store the final 2 process data
-    unsigned long first = -1;
-    unsigned long second = -1;
-
-    struct process_data *arr = (struct process_data *)malloc(2 * sizeof(struct process_data));
-    arr[0].kernel_time=-1;
-    arr[0].Name_of_process=NULL;
-    arr[0].process_id=-1;
-    arr[0].total_time=-1;
-    arr[0].user_time=-1;
-
-    arr[1].kernel_time=-1;
-    arr[1].Name_of_process=NULL;
-    arr[1].process_id=-1;
-    arr[1].total_time=-1;
-    arr[1].user_time=-1;
-
-    // read the /proc directory now
-    struct dirent *entry;
-    DIR *proc_dir = opendir("/proc");
-    if (proc_dir == NULL)
-    {
-        printf("Failed to open /proc directory\n");
-        fflush(stdout);
-    }
-    else
-    {
-        // start reading the proc directory
-        while ((entry = readdir(proc_dir)) != NULL)
-        {
-            int is_a_process_file = is_pid_dir(entry->d_name);
-            if (is_a_process_file)
-            {
-                // now parse the contents of this file
-                char name[300];
-                unsigned long user, kernel, total;
-                int pid;
-
-                char file_name[256];
-                sprintf(file_name, "/proc/%s/stat", entry->d_name);
-                FILE *new_process_file = fopen(file_name, "r");
-                if (new_process_file == NULL)
-                {
-                    printf("Error while opening file: /proc/%s/stat", entry->d_name);
-                    exit(1);
-                }
-                else
-                {
-                    char file_content[1024];
-                    char *data = fgets(file_content, sizeof(file_content), new_process_file);
-                    if (data == NULL)
-                    {
-                        printf("Error while reading the file: /proc/%s/stat", entry->d_name);
-                        close(new_process_file);
-                        exit(1);
-                    }
-                    else
-                    {
-                        // close the file now as data has been read
-                        close(new_process_file);
-                        sscanf(file_content, "%d %s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu",
-                               &pid, name, &user, &kernel);
-
-                        printf("process pid: %d %s %lu %lu", pid, name, user, kernel);
-                        total = user + kernel;
-                        fflush(stdout);
-                        if (total > first)
-                        {
-                            // upadate the second maximum to first maximum
-                            arr[1].kernel_time = arr[0].kernel_time;
-                            arr[1].Name_of_process = arr[0].Name_of_process;
-                            arr[1].process_id = arr[0].process_id;
-                            arr[1].user_time = arr[0].user_time;
-                            arr[1].total_time = arr[0].total_time;
-
-                            arr[0].kernel_time = kernel;
-                            arr[0].Name_of_process = name;
-                            arr[0].process_id = pid;
-                            arr[0].user_time = user;
-                            arr[0].total_time = total;
-
-                            //update the temp variables
-                            second=first;
-                            first=total;
-                        }
-                        else
-                        {
-                            if (total > second)
-                            {
-                                arr[1].kernel_time = kernel;
-                                arr[1].Name_of_process = name;
-                                arr[1].process_id = pid;
-                                arr[1].user_time = user;
-                                arr[1].total_time = total;
-                                second=total;
-                            }
-                        }
-                    }
-                }
-            }
-            fflush(stdout);
-        }
-        closedir(proc_dir);
-    }
-    printf("\n\n\nprocess pid: %d %s %lu", arr[0].process_id, arr[0].Name_of_process, arr[0].total_time);
-    printf("\nprocess pid: %d %s %lu", arr[1].process_id, arr[1].Name_of_process, arr[1].total_time);
-    fflush(stdout);
-
-}*/
-
-void get_process_info() {
-    // Allocate memory to store the final 2 process data
+    // give memory to store the final 2 process data
     unsigned long first = 0;
     unsigned long second = 0;
 
@@ -172,20 +60,23 @@ void get_process_info() {
     arr[1].total_time = 0;
     arr[1].user_time = 0;
 
-    // Read the /proc directory
+    // read the /proc directory
     struct dirent *entry;
     DIR *proc_dir = opendir("/proc");
-    if (proc_dir == NULL) {
+    if (proc_dir == NULL)
+    {
         printf("Failed to open /proc directory\n");
         fflush(stdout);
-        return;
+        return NULL;
     }
 
-    // Start reading the proc directory
-    while ((entry = readdir(proc_dir)) != NULL) {
+    // reading the file names of proc
+    while ((entry = readdir(proc_dir)) != NULL)
+    {
         int is_a_process_file = is_pid_dir(entry->d_name);
-        if (is_a_process_file) {
-            // Now parse the contents of this file
+        if (is_a_process_file)
+        {
+
             char name[300];
             unsigned long user, kernel, total;
             int pid;
@@ -193,49 +84,50 @@ void get_process_info() {
             char file_name[256];
             sprintf(file_name, "/proc/%s/stat", entry->d_name);
             FILE *new_process_file = fopen(file_name, "r");
-            if (new_process_file == NULL) {
+            if (new_process_file == NULL)
+            {
                 printf("Error while opening file: /proc/%s/stat", entry->d_name);
+                fflush(stdout);
                 continue;
             }
 
             char file_content[1024];
-            if (fgets(file_content, sizeof(file_content), new_process_file) == NULL) {
+            char *result = fgets(file_content, sizeof(file_content), new_process_file);
+            if (result == NULL)
+            {
                 printf("Error while reading the file: /proc/%s/stat", entry->d_name);
+                fflush(stdout);
                 fclose(new_process_file);
                 continue;
             }
             fclose(new_process_file);
 
-            // Extract the fields (name in parentheses)
+            // now parse the contents of this file
             sscanf(file_content, "%d (%[^)]) %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu",
                    &pid, name, &user, &kernel);
 
             total = user + kernel;
-            fflush(stdout);
 
-            if (total >= first) {
-                // Free previously stored process name before assigning a new one
-                if (arr[0].Name_of_process != NULL) free(arr[0].Name_of_process);
-
-                // Update second maximum to first maximum
+            if (total >= first)
+            {
+                // update second maximum to first maximum
                 arr[1] = arr[0];
 
-                // Update first maximum
+                // update first maximum
                 arr[0].kernel_time = kernel;
-                arr[0].Name_of_process = strdup(name);  // Duplicate the process name
+                arr[0].Name_of_process = strdup(name);
                 arr[0].process_id = pid;
                 arr[0].user_time = user;
                 arr[0].total_time = total;
 
-                // Update temp variables
+                // update temp variables
                 second = first;
                 first = total;
-            } else if (total >= second) {
-                // Free previously stored process name before assigning a new one
-                if (arr[1].Name_of_process != NULL) free(arr[1].Name_of_process);
-
+            }
+            else if (total >= second)
+            {
                 arr[1].kernel_time = kernel;
-                arr[1].Name_of_process = strdup(name);  // Duplicate the process name
+                arr[1].Name_of_process = strdup(name);
                 arr[1].process_id = pid;
                 arr[1].user_time = user;
                 arr[1].total_time = total;
@@ -252,30 +144,54 @@ void get_process_info() {
     printf("Process PID: %d, Name: %s, Total Time: %lu\n", arr[1].process_id, arr[1].Name_of_process, arr[1].total_time);
     fflush(stdout);
 
-    // Free allocated memory
-    free(arr[0].Name_of_process);
-    free(arr[1].Name_of_process);
+    // format the output to send to client
+    char final_result[2048];
+    sprintf(final_result, "\n1st Process:-----\nProcess PID: %d, Name: %s, User Time: %lu clock ticks, Kernel Time: %lu clock ticks, Total Time: %lu clock ticks\n2nd Process:-----\nProcess PID: %d, Name: %s, User Time: %lu clock ticks, Kernel Time: %lu clock ticks, Total Time: %lu clock ticks\n", arr[0].process_id, arr[0].Name_of_process, arr[0].user_time, arr[0].kernel_time, arr[0].total_time, arr[1].process_id, arr[1].Name_of_process, arr[1].user_time, arr[1].kernel_time, arr[1].total_time);
+
+    // free the memory of arr
     free(arr);
+
+    char *ptr_to_result = final_result;
+    return ptr_to_result;
 }
 
 void *process_client(void *client_data)
 {
     int client = (int)client_data;
-    printf("done %d\n", client);
     char buffer[1024] = {0};
     fflush(stdout);
     read(client, buffer, 1024);
     printf("msg : %s", buffer);
+    char response[2048] = {0};
     fflush(stdout);
     if (true)
     {
         // process the client request now
-        get_process_info();
+        char *answer = get_process_info();
+        if (answer == NULL)
+        {
+            printf("\nFailed to read proc directory, Server side error!");
+            fflush(stdout);
+            strcpy(response, "\nFailed to read proc directory, Server side error!");
+        }
+        else
+        {
+            strcpy(response, answer);
+        }
+
+        // send the data fetched/errors
+        send(client, response, sizeof(response), 0);
+
+        // close the connection
+        close(client);
     }
     else
     {
-        printf("Request not valid!!!\nClosing the connection");
+        printf("\nRequest not valid!!!\nClosing the connection");
+        char *answer = "\nRequest not valid!!!\n";
+        send(client, answer, strlen(answer), 0);
         fflush(stdout);
+        close(client);
         exit(1);
     }
 }
@@ -326,6 +242,8 @@ int main()
     if (listen_result < 0)
     {
         printf("Server Failed to listen requests!!!\n");
+        fflush(stdout);
+        exit(1);
     }
     else
     {
@@ -358,6 +276,14 @@ int main()
         // now create a thread to process the new client
         pthread_t client_thread;
         int thread = pthread_create(&client_thread, NULL, process_client, (void *)new_client);
+        if(thread==0){
+            pthread_detach(client_thread);
+        }
+        else{
+            printf("\nThread failed!!");
+            fflush(stdout);
+        }
+        
     }
 
     return 0;
