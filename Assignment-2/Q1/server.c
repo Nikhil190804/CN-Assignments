@@ -245,8 +245,9 @@ int main()
         exit(1);
     }
     else
-    {
-        printf("Server now listening on port %d \n", PORT);
+    {   
+        char *server_ip = give_ip(server_address.sin_addr);
+        printf("Server now listening on port %d with IP as: %s\n", PORT,server_ip);
         fflush(stdout);
     }
 
