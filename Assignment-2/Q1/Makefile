@@ -6,7 +6,7 @@ run-s: server
 	taskset -c 0 ./server
 
 run-c: client
-	taskset -c 0 ./client 3
+	taskset -c 1 ./client 3
 
 clean:
 	rm -f server client
