@@ -1,4 +1,6 @@
 import csv
+import matplotlib.pyplot as plt
+import pandas as pd
 
 file = open("q3.tr",'r')
 filtered_lines=[]
@@ -27,7 +29,7 @@ for line in filtered_lines:
         else:
             record[pkt_id]=[0,time]
 
-output_file = open('q1_delay.csv','w')
+output_file = open('q3_delay.csv','w',newline='')
 writer=csv.writer(output_file)
 
 for key in record:
@@ -40,3 +42,26 @@ for key in record:
 
 output_file.close()
 file.close()
+
+
+
+
+file_path = "q3_delay.csv"  
+data = pd.read_csv(file_path,header=None)
+
+data = data[(data.iloc[:, 1] >= 0) & (data.iloc[:, 0] >= 0)]  
+
+x = data.iloc[:, 0]  
+y = data.iloc[:, 1]  
+
+plt.figure(figsize=(8, 6))
+plt.plot(x, y, linestyle='-', color='b')  
+plt.xlabel("Time")
+plt.ylabel("Delay")
+plt.title("Delay vs Time")
+plt.grid(True)
+
+output_file = "q3_delay_img.png"  
+plt.savefig(output_file, dpi=300)
+
+plt.show()
